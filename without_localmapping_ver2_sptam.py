@@ -47,8 +47,8 @@ class SPTAM(object):
         self.graph = CovisibilityGraph()
         self.mapping = MappingThread(self.graph, params)
 
-        # self.loop_closing = None
-        self.loop_closing = LoopClosing(self, params)
+        self.loop_closing = None
+        # self.loop_closing = LoopClosing(self, params)
         self.loop_correction = None
         
         self.reference = None        # reference keyframe
@@ -80,6 +80,15 @@ class SPTAM(object):
 
         self.motion_model.update_pose(
             frame.timestamp, frame.position, frame.orientation)
+
+    def initialize_localmap(self, frame):
+        self.graph = CovisibilityGraph()
+        mappoints, measurements = frame.triangulate()
+        assert len(mappoints) >= self.params.init_min_points, (
+            'Not enough points to initialize map.')
+
+        self.graph.add_keyframe(frame)
+
 
     def track(self, frame):
         while self.is_paused():
@@ -118,7 +127,7 @@ class SPTAM(object):
         
         try:
             self.reference = self.graph.get_reference_frame(tracked_map)
-            print(len(measurements),'measurements len')
+            # print(len(measurements),'measurements len')
             pose = self.tracker.refine_pose(frame.pose, frame.cam, measurements) 
             frame.update_pose(pose)
             self.motion_model.update_pose(
@@ -301,6 +310,8 @@ if __name__ == '__main__':
             sptam.initialize(frame)
         else:
             sptam.track(frame)
+            sptam.initialize_localmap(frame)
+            
 
         
         flatten_list=(sptam.current.pose.matrix().flatten()[:-4]).tolist()

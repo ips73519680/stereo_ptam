@@ -37,7 +37,7 @@ class ImageFeature(object):
             self.keypoints = self.detector.detect(self.image)
             self.keypoints, self.descriptors = self.extractor.compute(
             self.image, self.keypoints)
-            print(len(self.keypoints),'keypoints.shape')
+            # print(len(self.keypoints),'keypoints.shape')
 
         self.unmatched = np.ones(len(self.keypoints), dtype=bool)
 
@@ -123,9 +123,12 @@ class ImageFeature(object):
 
 # TODO: only match points in neighboring rows
 def row_match(matcher, kps1, desps1, kps2, desps2,
-        matching_distance=40, 
-        max_row_distance=2.5, 
-        max_disparity=100):
+        # matching_distance=40, 
+        # max_row_distance=2.5, 
+        # max_disparity=100,
+        matching_distance=300, 
+        max_row_distance=40, 
+        max_disparity=2000):
 
     matches = matcher.match(np.array(desps1), np.array(desps2))
     good = []

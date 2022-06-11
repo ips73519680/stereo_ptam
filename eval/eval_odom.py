@@ -10,8 +10,8 @@
 
 import argparse
 
-from kitti_odometry import KittiEvalOdom
-
+# from kitti_odometry import KittiEvalOdom
+from draw_compare import KittiEvalOdom
 
 def argument_parsing():
     """Argument parsing

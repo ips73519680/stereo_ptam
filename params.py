@@ -100,7 +100,7 @@ class ParamsKITTI(Params):
 
         elif config == 'Superpoint-BRIEF':
             self.feature_detector = Superpoint(
-                weights_name = 'sp_v6',keep_k_best=750
+                weights_name = 'sp_v6',keep_k_best=1000
             )
             self.descriptor_extractor = cv2.xfeatures2d.BriefDescriptorExtractor_create(
                 bytes=32, use_orientation=False)
@@ -116,10 +116,8 @@ class ParamsKITTI(Params):
 
 
         if(config == 'Superpoint-Superpoint'):
-            print('hi1')
             self.descriptor_matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False)
         else:
-            print('hi2')
             self.descriptor_matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
 
 

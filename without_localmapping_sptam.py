@@ -87,26 +87,18 @@ class SPTAM(object):
         self.set_tracking(True)
 
         self.current = frame
+
+        mappoints, measurements = self.preceding.triangulate()
+ 
         # print('Tracking:', frame.idx, ' <- ', self.reference.id, self.reference.idx)
 
         predicted_pose, _ = self.motion_model.predict_pose(frame.timestamp)
-
         frame.update_pose(predicted_pose)
 
-        if self.loop_closing is not None:
-            if self.loop_correction is not None:
-                estimated_pose = g2o.Isometry3d(
-                    frame.orientation,
-                    frame.position)
-                estimated_pose = estimated_pose * self.loop_correction
-                frame.update_pose(estimated_pose)
-                self.motion_model.apply_correction(self.loop_correction)
-                self.loop_correction = None
 
-        local_mappoints = self.filter_points(frame)
         measurements = frame.match_mappoints(
-            local_mappoints, Measurement.Source.TRACKING)
-
+            mappoints, Measurement.Source.TRACKING)
+        print(len(measurements),'measurements len')
         # print('measurements:', len(measurements), '   ', len(local_mappoints))
 
         tracked_map = set()
@@ -118,12 +110,12 @@ class SPTAM(object):
         
         try:
             self.reference = self.graph.get_reference_frame(tracked_map)
-            print(len(measurements),'measurements len')
             pose = self.tracker.refine_pose(frame.pose, frame.cam, measurements) 
             frame.update_pose(pose)
             self.motion_model.update_pose(
                 frame.timestamp, pose.position(), pose.orientation())
             tracking_is_ok = True
+            self.preceding = frame
         except:
             tracking_is_ok = False
             print('tracking failed!!!')
