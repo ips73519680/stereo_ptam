@@ -6,8 +6,9 @@ from numbers import Number
 
 from threading import Thread, Lock 
 from queue import Queue
-from SuperPoint.superpoint.superpoint_for_sptam import Superpoint  
+# from SuperPoint.superpoint.superpoint_for_sptam import Superpoint  
 
+from match_module import Detecting
 
 class ImageFeature(object):
     def __init__(self, image, params):
@@ -31,13 +32,16 @@ class ImageFeature(object):
 
     def extract(self):
 
-        if (isinstance(self.detector, Superpoint) and isinstance(self.descriptors, Superpoint)):
-            self.keypoints, self.descriptors = self.detector.detect_and_extract(self.image)
+        # for superpoint
+        # if (isinstance(self.detector, Superpoint) and isinstance(self.descriptors, Superpoint)):
+        #     self.keypoints, self.descriptors = self.detector.detect_and_extract(self.image)
+        if (isinstance(self.detector, Detecting) and isinstance(self.extractor, Detecting)):
+            self.keypoints, self.descriptors = self.detector(self.image)
+
         else:
             self.keypoints = self.detector.detect(self.image)
             self.keypoints, self.descriptors = self.extractor.compute(
             self.image, self.keypoints)
-            # print(len(self.keypoints),'keypoints.shape')
 
         self.unmatched = np.ones(len(self.keypoints), dtype=bool)
 
@@ -127,7 +131,7 @@ def row_match(matcher, kps1, desps1, kps2, desps2,
         # max_row_distance=2.5, 
         # max_disparity=100,
         matching_distance=300, 
-        max_row_distance=40, 
+        max_row_distance=80, 
         max_disparity=2000):
 
     matches = matcher.match(np.array(desps1), np.array(desps2))
@@ -141,7 +145,6 @@ def row_match(matcher, kps1, desps1, kps2, desps2,
             good.append(m)
     return good
     
-
 
 def circular_stereo_match(
         matcher, 

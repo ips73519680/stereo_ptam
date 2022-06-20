@@ -47,8 +47,8 @@ class SPTAM(object):
         self.graph = CovisibilityGraph()
         self.mapping = MappingThread(self.graph, params)
 
-        # self.loop_closing = None
-        self.loop_closing = LoopClosing(self, params)
+        self.loop_closing = None
+        # self.loop_closing = LoopClosing(self, params)
         self.loop_correction = None
         
         self.reference = None        # reference keyframe
@@ -81,24 +81,41 @@ class SPTAM(object):
         self.motion_model.update_pose(
             frame.timestamp, frame.position, frame.orientation)
 
+    def initialize_localmap(self, frame):
+        self.graph = CovisibilityGraph()
+        mappoints, measurements = frame.triangulate()
+        assert len(mappoints) >= self.params.init_min_points, (
+            'Not enough points to initialize map.')
+
+        self.graph.add_keyframe(frame)
+
+
     def track(self, frame):
         while self.is_paused():
             time.sleep(1e-4)
         self.set_tracking(True)
 
         self.current = frame
-
-        mappoints, measurements = self.preceding.triangulate()
- 
         # print('Tracking:', frame.idx, ' <- ', self.reference.id, self.reference.idx)
 
         predicted_pose, _ = self.motion_model.predict_pose(frame.timestamp)
+
         frame.update_pose(predicted_pose)
 
+        if self.loop_closing is not None:
+            if self.loop_correction is not None:
+                estimated_pose = g2o.Isometry3d(
+                    frame.orientation,
+                    frame.position)
+                estimated_pose = estimated_pose * self.loop_correction
+                frame.update_pose(estimated_pose)
+                self.motion_model.apply_correction(self.loop_correction)
+                self.loop_correction = None
 
+        local_mappoints = self.filter_points(frame)
         measurements = frame.match_mappoints(
-            mappoints, Measurement.Source.TRACKING)
-        print(len(measurements),'measurements len')
+            local_mappoints, Measurement.Source.TRACKING)
+
         # print('measurements:', len(measurements), '   ', len(local_mappoints))
 
         tracked_map = set()
@@ -110,12 +127,12 @@ class SPTAM(object):
         
         try:
             self.reference = self.graph.get_reference_frame(tracked_map)
+            # print(len(measurements),'measurements len')
             pose = self.tracker.refine_pose(frame.pose, frame.cam, measurements) 
             frame.update_pose(pose)
             self.motion_model.update_pose(
                 frame.timestamp, pose.position(), pose.orientation())
             tracking_is_ok = True
-            self.preceding = frame
         except:
             tracking_is_ok = False
             print('tracking failed!!!')
@@ -237,9 +254,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # feature chose
-    # config='Superpoint-Superpoint' 
+    config='Superpoint-Superpoint' 
     # config='Superpoint-BRIEF' 
-    config='GFTT-BRIEF'
+    # config='GFTT-BRIEF'
     # config='ORB-ORB' 
 
     
@@ -293,6 +310,8 @@ if __name__ == '__main__':
             sptam.initialize(frame)
         else:
             sptam.track(frame)
+            sptam.initialize_localmap(frame)
+            
 
         
         flatten_list=(sptam.current.pose.matrix().flatten()[:-4]).tolist()
@@ -316,10 +335,10 @@ if __name__ == '__main__':
     print('config : ',config)
     f.close()
     
-    if(config == 'Superpoint-BRIEF'):
-        params.feature_detector.sess.close()
-    if(config == 'Superpoint-Superpoint'):
-        params.feature_detector.sess.close()    
+    # if(config == 'Superpoint-BRIEF'):
+    #     params.feature_detector.sess.close()
+    # if(config == 'Superpoint-Superpoint'):
+        # params.feature_detector.sess.close()    
 
 
     sptam.stop()

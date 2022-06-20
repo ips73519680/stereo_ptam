@@ -1,5 +1,8 @@
-import cv2
-from SuperPoint.superpoint.superpoint_for_sptam import Superpoint  
+import cv2 
+# from SuperPoint.superpoint.superpoint_for_sptam import Superpoint  
+from SuperGluePretrainedNetwork.models.superglue import SuperGlue
+from match_module import Detecting
+import torch
 
 class Params(object):
     def __init__(self):
@@ -37,14 +40,14 @@ class ParamsEuroc(Params):
                 maxCorners=1000, minDistance=15.0, 
                 qualityLevel=0.001, useHarrisDetector=False)
 
-            self.descriptor_extractor = cv2.xfeatures2d.BriefDescriptorExtractor_create(
+            self.descriptor_extractor = cv2.BriefDescriptorExtractor_create(
                 bytes=32, use_orientation=False)
 
         elif config == 'ORB-BRIEF':
             self.feature_detector = cv2.ORB_create(
                 nfeatures=200, scaleFactor=1.2, nlevels=1, edgeThreshold=31)
 
-            self.descriptor_extractor = cv2.xfeatures2d.BriefDescriptorExtractor_create(
+            self.descriptor_extractor = cv2.BriefDescriptorExtractor_create(
                 bytes=32, use_orientation=False)
             
         else:
@@ -72,8 +75,6 @@ class ParamsEuroc(Params):
         self.view_viewpoint_f = 2000
 
     
-        
-
 class ParamsKITTI(Params):
     def __init__(self, config='GFTT-BRIEF'):
         super().__init__()
@@ -82,9 +83,7 @@ class ParamsKITTI(Params):
             self.feature_detector = cv2.GFTTDetector_create(
                 maxCorners=1000, minDistance=12.0, 
                 qualityLevel=0.001, useHarrisDetector=False)
-
-            self.descriptor_extractor = cv2.xfeatures2d.BriefDescriptorExtractor_create(
-                bytes=32, use_orientation=False)
+            self.descriptor_extractor = cv2.xfeatures2d.BriefDescriptorExtractor_create()
 
         elif config == 'GFTT-BRISK':
             self.feature_detector = cv2.GFTTDetector_create(
@@ -102,21 +101,31 @@ class ParamsKITTI(Params):
             self.feature_detector = Superpoint(
                 weights_name = 'sp_v6',keep_k_best=1000
             )
-            self.descriptor_extractor = cv2.xfeatures2d.BriefDescriptorExtractor_create(
+            self.descriptor_extractor = cv2.xfeatures2d.BriefDescriptorExtractor(
                 bytes=32, use_orientation=False)
 
         elif config == 'Superpoint-Superpoint':
-            self.feature_detector = Superpoint(
-                weights_name = 'sp_v6',keep_k_best=1000
-            )
+            # self.feature_detector = Superpoint(
+            #     weights_name = 'sp_v6',keep_k_best=1000
+            # )
+            # self.descriptor_extractor = self.feature_detector  
+            
+            device = 'cuda' if torch.cuda.is_available()  else 'cpu'
+            print('Running inference on device \"{}\"'.format(device))
+            self.feature_detector = Detecting(device=device)
             self.descriptor_extractor = self.feature_detector             
 
         else:
             raise NotImplementedError
 
 
-        if(config == 'Superpoint-Superpoint'):
+        if(config == 'Superpoint-Superpoint'):         
+            # device = 'cuda' if torch.cuda.is_available()  else 'cpu'
+            # print('Running inference on device \"{}\"'.format(device))
+            # self.descriptor_matcher = Matching(device=device)
+             
             self.descriptor_matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False)
+
         else:
             self.descriptor_matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
 

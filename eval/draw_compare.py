@@ -268,13 +268,13 @@ class KittiEvalOdom():
             poses_result (dict): {idx: 4x4 array}; predicted poses
             seq (int): sequence index.
         """
-        plot_keys = ["Ground Truth", "Ours_localmap_Removed","Ours"]
+        plot_keys = ["Ground Truth", "local map","local map_Removed"]
         fontsize_ = 20
 
         poses_dict = {}
         poses_dict["Ground Truth"] = poses_gt
-        poses_dict["Ours_localmap_Removed"] = poses_result
-        poses_dict["Ours"] = c_poses_result
+        poses_dict["local map"] = poses_result
+        poses_dict["local map_Removed"] = c_poses_result
         
 
         fig = plt.figure()
@@ -283,7 +283,7 @@ class KittiEvalOdom():
 
         for key in plot_keys:
             pos_xz = []
-            frame_idx_list = sorted(poses_dict["Ours"].keys())
+            frame_idx_list = sorted(poses_dict["local map_Removed"].keys())
             for frame_idx in frame_idx_list:
                 # pose = np.linalg.inv(poses_dict[key][frame_idx_list[0]]) @ poses_dict[key][frame_idx]
                 pose = poses_dict[key][frame_idx]

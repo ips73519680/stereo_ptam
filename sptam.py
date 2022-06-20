@@ -118,7 +118,7 @@ class SPTAM(object):
         
         try:
             self.reference = self.graph.get_reference_frame(tracked_map)
-            print(len(measurements),'measurements len')
+            # print(len(measurements),'measurements len')
             pose = self.tracker.refine_pose(frame.pose, frame.cam, measurements) 
             frame.update_pose(pose)
             self.motion_model.update_pose(
@@ -245,9 +245,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # feature chose
-    # config='Superpoint-Superpoint' 
+    config='Superpoint-Superpoint' 
     # config='Superpoint-BRIEF' 
-    config='GFTT-BRIEF'
+    # config='GFTT-BRIEF'
     # config='ORB-ORB' 
 
     
@@ -324,10 +324,10 @@ if __name__ == '__main__':
     print('config : ',config)
     f.close()
     
-    if(config == 'Superpoint-BRIEF'):
-        params.feature_detector.sess.close()
-    if(config == 'Superpoint-Superpoint'):
-        params.feature_detector.sess.close()    
+    # if(config == 'Superpoint-BRIEF'):
+    #     params.feature_detector.sess.close()
+    # if(config == 'Superpoint-Superpoint'):
+    #     params.feature_detector.sess.close()    
 
 
     sptam.stop()
